@@ -62,14 +62,14 @@ action :join do
   wait_for_riak
   ring_ready = ringready
   Chef::Application.fatal!("Can't join a Riak cluster if the local node is not running.") unless ring_ready[:running]
-  peers = new_resource.members.uniq.select{|member| member != node_name}.shuffle
+  peers = new_resource.members.uniq.reject{|member| member == node_name}.shuffle
   unless peers.any?
     Chef::Log.info "#{new_resource} no peers, doing nothing"
   else
     if joined?
       Chef::Log.info "#{new_resource} Already joined cluster"
     else
-      new_resource.members.uniq.select{|member| member != node_name}.shuffle.each do |peer|
+      peers.each do |peer|
         Chef::Log.info "Riak: Attempting to join #{new_resource.cluster_name} on #{peer}"
         if join(peer)
           if wait_for_ring
